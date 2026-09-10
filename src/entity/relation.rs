@@ -223,6 +223,44 @@ impl RelationDef {
         }
     }
 
+    /// The belongs-to foreign-key edge this relation describes, if any: the
+    /// foreign-key column(s) on the `from` table and the name of the table they
+    /// reference. `None` for the owning side of a relation (`has_one` /
+    /// `has_many`), where the foreign key sits in `to_col` on the `to` table.
+    ///
+    /// This is a shorter equivalent to checking `is_owner` and reading `from_col` and `to_tbl` by hand.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sea_orm::{entity::*, tests_cfg::cake_filling};
+    ///
+    /// let (from_col, to_tbl) = cake_filling::Relation::Cake
+    ///     .def()
+    ///     .belongs_to_edge()
+    ///     .expect("cake_filling belongs to cake");
+    /// assert_eq!(from_col, cake_filling::Column::CakeId.into_identity());
+    /// assert_eq!(to_tbl, "cake");
+    ///
+    /// // The owning side of the same relation declares no foreign key of its own.
+    /// assert!(
+    ///     cake_filling::Relation::Cake
+    ///         .def()
+    ///         .rev()
+    ///         .belongs_to_edge()
+    ///         .is_none()
+    /// );
+    /// ```
+    pub fn belongs_to_edge(&self) -> Option<(Identity, String)> {
+        if self.is_owner {
+            return None;
+        }
+        Some((
+            self.from_col.clone(),
+            self.to_tbl.sea_orm_table().to_string(),
+        ))
+    }
+
     /// Express the relation from a table alias.
     ///
     /// This is a shorter and more discoverable equivalent to modifying `from_tbl` field by hand.
